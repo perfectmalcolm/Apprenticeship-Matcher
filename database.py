@@ -69,5 +69,23 @@ def search_apprentices_in_db(trade: str, location: str):
     conn.close()
     return [row[0] for row in results]
 
+def get_all_youth():
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM youth ORDER BY registered_at DESC")
+    results = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return results
+
+def get_all_masters():
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM masters ORDER BY created_at DESC")
+    results = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return results
+
 # Initialize on import
 init_db()
