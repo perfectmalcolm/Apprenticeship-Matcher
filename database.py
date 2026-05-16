@@ -1,7 +1,7 @@
 import sqlite3
 import os
 
-DB_FILE = "jua_kali.db"
+DB_FILE = "/tmp/jua_kali.db"
 
 def init_db():
     conn = sqlite3.connect(DB_FILE)
