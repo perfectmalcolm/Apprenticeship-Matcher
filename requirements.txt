@@ -5,3 +5,4 @@ google-generativeai
 httpx
 python-dotenv
 pydantic
+python-multipart
