@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 africastalking
-google-generativeai
+google-genai
 httpx
 python-dotenv
 pydantic
