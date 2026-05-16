@@ -1,58 +1,67 @@
-# The Jua Kali Apprenticeship Matcher
+# The Jua Kali Apprenticeship Matcher 🚀
 
-## The Problem
-Kenya’s jua kali sector employs over 15 million people, with skills primarily passed down orally. A major bottleneck in this sector is connection: Masters can’t find willing apprentices, and interested youth can’t find masters to train them. Traditional tech solutions fail here because many masters and youth rely on feature phones and will never open a smartphone app.
+**Build AI Agents. Solve Kenya’s Real Problems.**
 
-## Our Solution
-A feature-phone-first platform using Voice and USSD, powered by a Gemini AI Agent. 
-- **Youth** register their trade interests and locations via a simple USSD menu.
-- **Masters** call a phone number and leave a natural, 60-second voice message explaining who they are and what they need.
+## 1. The Problem (Plain Language)
+Kenya’s jua kali sector employs over 15 million people, yet it remains almost entirely informal. Skills and opportunities are shared orally, which creates a massive "connection gap": masters with decades of experience can't find apprentices, and eager youth can't find mentors. Because these users primarily use feature phones and often work in noisy, hands-on environments, traditional smartphone apps are useless to them.
 
-## Agent Architecture
-Our solution uses a true AI Agent architecture, moving beyond simple API wrappers:
+## 2. Our Solution
+A "No-App" platform that brings the power of **Gemini AI Agents** to every feature phone in Kenya.
+- **Youth** register their interest and location via a fast **USSD menu**.
+- **Masters** describe their needs naturally via **Voice** (or SMS).
+- **The Agent** listens, reasons, and matches them instantly.
 
-- **The Jua Kali Matcher Agent:** Built using the Gemini 1.5 Flash model with native audio understanding.
-- **Tools:** The agent is equipped with three tools:
-  1. `search_apprentices(trade, location)`: Queries our SQLite database for matches.
-  2. `notify_apprentice(youth_phone, master_phone, message)`: Sends an Africa's Talking SMS to the matched youth.
-  3. `notify_master(master_phone, message)`: Sends a summary SMS back to the master.
-- **Workflow:** When a master calls, Africa's Talking records the audio. Our webhook downloads this audio and sends it to the Gemini Agent. The Agent *listens* to the audio, extracts the trade and location, *autonomously* searches the database for matching youth, and *decides* to send SMS notifications to all parties involved, summarizing the matches.
+## 3. Agent Architecture
+Our solution is a genuine AI Agent, not a simple wrapper. It demonstrates **autonomous tool use** and **natural language reasoning**:
 
-## How to Run Locally
+- **Brain:** Gemini 1.5 Flash (with native audio and text understanding).
+- **Tools:**
+  - `search_apprentices`: The agent decides when to query the database for matches.
+  - `notify_apprentice`: The agent autonomously sends SMS matches to the youth.
+  - `notify_master`: The agent summarizes the outcome for the master.
+- **Workflow:** When a Master's voice or text request comes in, the Agent extracts the intent (Trade & Location), decides to search the database, and executes the notifications without any human intervention.
 
-1. Clone the repository:
+## 4. How to Run Locally
+
+1. **Clone & Setup:**
    ```bash
    git clone https://github.com/perfectmalcolm/Apprenticeship-Matcher.git
    cd Apprenticeship-Matcher
-   ```
-2. Set up a virtual environment and install dependencies:
-   ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+   source venv/bin/activate  # venv\Scripts\activate on Windows
    pip install -r requirements.txt
    ```
-3. Create a `.env` file with your API keys:
-   ```
+2. **Environment:** Create a `.env` file:
+   ```env
+   GEMINI_API_KEY=your_key
    AT_USERNAME=sandbox
-   AT_API_KEY=your_africas_talking_api_key
-   GEMINI_API_KEY=your_gemini_api_key
-   BASE_URL=https://your-ngrok-url.ngrok-free.app
+   AT_API_KEY=your_at_key
    ```
-4. Run the FastAPI server:
+3. **Run:**
    ```bash
-   uvicorn main:app --reload --port 8000
+   uvicorn main:app --reload
    ```
-5. Use a tool like `ngrok` to expose your local port 8000 to the internet, and configure the webhook URLs in your Africa's Talking sandbox (USSD: `/ussd`, Voice: `/voice`).
 
-## How to Interact with the Deployed Version
+## 5. How to Interact (Pitch Demo)
 
-- **Youth Registration:** Dial the Africa's Talking USSD code (e.g., `*384*XXXX#`) from the simulator or a registered phone. Follow the prompts to register for a trade (e.g., "Welding") in a location (e.g., "Nairobi").
-- **Master Request:** Call the Africa's Talking Voice number associated with the app. You will hear a greeting. Leave a voice message like: *"Hello, I am a welder in Nairobi looking for a hardworking apprentice to help me."*
-- **Wait for SMS:** Within seconds, the Gemini Agent will process the audio and send an SMS to the registered youth and a confirmation SMS to the master.
+**Deployed Version:** [https://jua-kali-matcher-775881152318.us-central1.run.app/dashboard](https://jua-kali-matcher-775881152318.us-central1.run.app/dashboard)
 
-## Demo Video / Screenshots
-*(Add a link to the demo video or embed screenshots from the Africa's Talking Simulator here)*
+1. **Apprentice Side (USSD):**
+   - Open the [Africa's Talking Simulator](https://simulator.africastalking.com/).
+   - Dial `*384*54593#`.
+   - Register a youth (e.g., "Welding" in "Nairobi").
+2. **Master Side (SMS Fallback):**
+   - Send an SMS to the shortcode starting with the word **`MASTER`**.
+   - *Example:* `MASTER: I am a welder in Nairobi looking for a hardworking apprentice.`
+3. **The Result:**
+   - Watch the **Live Dashboard**! The Master's request will appear, and the matching youth will receive an SMS automatically.
 
-## Team Members
-- [Your Name / Alias] - Full Stack & AI Agent Engineer
-- [Other Members]
+## 6. Team Members
+- **Malcolm Kioko** - Lead AI Agent & Backend Engineer
+- **Macklee Gitonga**
+- **Abigail Wairi**
+- **Lucy Karimi**
+
+## 7. Project Submission
+- **GitHub:** [https://github.com/perfectmalcolm/Apprenticeship-Matcher](https://github.com/perfectmalcolm/Apprenticeship-Matcher)
+- **Live Demo:** [https://jua-kali-matcher-775881152318.us-central1.run.app/dashboard](https://jua-kali-matcher-775881152318.us-central1.run.app/dashboard)
