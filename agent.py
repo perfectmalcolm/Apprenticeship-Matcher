@@ -30,8 +30,7 @@ async def process_master_request(master_phone: str, audio_url: str = None, text:
         try:
             print(f"Trying Gemini API at {url[:60]}...")
             payload = {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"response_mime_type": "application/json"}
+                "contents": [{"parts": [{"text": prompt}]}]
             }
             async with httpx.AsyncClient() as client:
                 resp = await client.post(url, json=payload, timeout=30.0)
