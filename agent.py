@@ -1,10 +1,8 @@
 import os
 import httpx
-import asyncio
+import json
 from database import search_apprentices_in_db, save_master
 import africastalking
-from google import genai
-from google.genai import types
 
 # Initialize Africa's Talking
 AT_USERNAME = os.environ.get("AT_USERNAME", "sandbox")
@@ -12,84 +10,60 @@ AT_API_KEY = os.environ.get("AT_API_KEY", "dummy_key")
 africastalking.initialize(AT_USERNAME, AT_API_KEY)
 sms = africastalking.SMS
 
-# Initialize Gemini Client
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-
-# Define tools for the agent (standard Python functions)
-def search_apprentices(trade: str, location: str) -> str:
-    """Searches the database for youth apprentices matching the trade and location."""
-    print(f"Agent tool call: search_apprentices({trade}, {location})")
-    matches = search_apprentices_in_db(trade, location)
-    if not matches:
-        return "No matching apprentices found in this location."
-    return f"Found matching apprentices: {', '.join(matches)}"
-
-def notify_apprentice(youth_phone: str, master_phone: str, trade: str) -> str:
-    """Sends an SMS to a matched apprentice."""
-    message = f"Jua Kali Match! A Master in {trade} is looking for you. Call them: {master_phone}"
-    try:
-        sms.send(message, [youth_phone])
-        return f"Successfully notified {youth_phone}"
-    except Exception as e:
-        return f"Failed to notify {youth_phone}: {str(e)}"
-
-def notify_master(master_phone: str, summary: str) -> str:
-    """Sends a final summary SMS to the master."""
-    try:
-        sms.send(summary, [master_phone])
-        return "Master notified."
-    except Exception as e:
-        return f"Failed to notify master: {str(e)}"
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 async def process_master_request(master_phone: str, audio_url: str = None, text: str = None):
-    """The core Agent loop using Gemini 1.5 Flash."""
-    print(f"Agent starting for {master_phone}")
+    """Processes a master's request using a direct Gemini API call for maximum reliability."""
+    print(f"Direct Agent processing for {master_phone}...")
     
-    contents = []
-    if audio_url:
-        # For audio, we'd normally download and send to Gemini
-        # In this SDK we use client.files.upload
-        local_filename = f"/tmp/{master_phone}_audio.wav"
-        try:
-            async with httpx.AsyncClient() as httpx_client:
-                resp = await httpx_client.get(audio_url)
-                with open(local_filename, "wb") as f:
-                    f.write(resp.content)
-            
-            # Note: Uploading in this SDK is synchronous in the current version
-            myfile = client.files.upload(path=local_filename)
-            contents.append(myfile)
-        except Exception as e:
-            print(f"Audio error: {e}")
-            return
+    # 1. Prepare the prompt
+    prompt = f"""
+    You are the Jua Kali Matcher Agent.
+    User Request: {text if text else 'A voice recording was provided.'}
+    
+    Task:
+    1. Identify the 'trade' (e.g., Welding, Carpentry) and 'location' (e.g., Nairobi).
+    2. Respond ONLY with a JSON object in this format:
+    {{"trade": "extracted_trade", "location": "extracted_location", "summary": "A brief 1-sentence summary of what the master wants"}}
+    """
 
-    if text:
-        contents.append(f"User Request: {text}")
+    # 2. Call Gemini API directly (no SDK dependencies)
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    payload = {{
+        "contents": [{{"parts": [{{"text": prompt}}]}}],
+        "generationConfig": {{"response_mime_type": "application/json"}}
+    }}
 
     try:
-        # Run the agent with tool use
-        response = client.models.generate_content(
-            model='gemini-1.5-flash',
-            contents=contents,
-            config=types.GenerateContentConfig(
-                tools=[search_apprentices, notify_apprentice, notify_master],
-                system_instruction=(
-                    "You are the Jua Kali Matcher Agent. "
-                    "1. Extract 'trade' and 'location' from the user input. "
-                    "2. ALWAYS call search_apprentices to find youth. "
-                    "3. If matches found, call notify_apprentice for EACH match. "
-                    "4. Finally, call notify_master to give them a brief result summary. "
-                    f"The master's phone number is {master_phone}."
-                ),
-                automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=False)
-            )
-        )
-        
-        print(f"Agent finished. Summary: {response.text}")
-        save_master(master_phone, "AI Extracted", "AI Extracted", audio_url or "SMS", response.text)
-        
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(url, json=payload, timeout=30.0)
+            result = resp.json()
+            content = result['candidates'][0]['content']['parts'][0]['text']
+            data = json.loads(content)
+            
+            trade = data.get("trade", "Unknown")
+            location = data.get("location", "Unknown")
+            summary = data.get("summary", "No summary available")
+            
+            print(f"Extracted: {trade} in {location}")
+            
+            # 3. Match and Notify
+            matches = search_apprentices_in_db(trade, location)
+            
+            if matches:
+                match_count = len(matches)
+                # Notify master
+                sms.send(f"Success! We found {match_count} apprentices for {trade} in {location}. They have been notified.", [master_phone])
+                
+                # Notify each apprentice
+                for app_phone in matches:
+                    sms.send(f"Jua Kali Match! A Master in {trade} is looking for you. Call them: {master_phone}", [app_phone])
+            else:
+                sms.send(f"We received your request for {trade} in {location}, but no matches were found yet. We will notify you when someone registers!", [master_phone])
+            
+            # 4. Save to DB
+            save_master(master_phone, trade, location, audio_url or "SMS", summary)
+            
     except Exception as e:
-        print(f"Agent Error: {e}")
-    finally:
-        if audio_url and os.path.exists(local_filename):
-            os.remove(local_filename)
+        print(f"Direct Agent Error: {e}")
+        save_master(master_phone, "Error", "Error", "Error", f"Failed to process: {str(e)}")
