@@ -38,7 +38,13 @@ async def process_master_request(master_phone: str, audio_url: str = None, text:
                 
                 if 'candidates' in result:
                     content_text = result['candidates'][0]['content']['parts'][0]['text']
-                    data = json.loads(content_text)
+                
+                    # Robust JSON parsing (handles markdown backticks)
+                    clean_content = content_text.strip()
+                    if clean_content.startswith("```"):
+                        clean_content = clean_content.split("\n", 1)[1].rsplit("\n", 1)[0]
+                    
+                    data = json.loads(clean_content)
                     
                     trade = data.get("trade", "Unknown")
                     location = data.get("location", "Unknown")
