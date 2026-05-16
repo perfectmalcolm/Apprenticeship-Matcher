@@ -66,21 +66,42 @@ def get_dashboard():
             }}
             header {{
                 text-align: center;
-                padding: 3rem 2rem;
+                padding: 2rem 1rem;
                 background: rgba(15, 23, 42, 0.5);
                 backdrop-filter: blur(10px);
                 border-bottom: 1px solid rgba(255,255,255,0.1);
             }}
+            .refresh-bar {{
+                height: 4px;
+                background: var(--accent);
+                width: 0%;
+                position: fixed;
+                top: 0;
+                left: 0;
+                transition: width 10s linear;
+                z-index: 1000;
+            }}
             h1 {{
                 margin: 0;
-                font-size: 3rem;
+                font-size: 2.5rem;
                 background: linear-gradient(to right, #60a5fa, #34d399);
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
             }}
             p.subtitle {{
                 color: var(--text-muted);
-                font-size: 1.2rem;
+                font-size: 1rem;
+                margin-top: 0.5rem;
+            }}
+            .status-badge {{
+                display: inline-block;
+                padding: 4px 12px;
+                background: rgba(16, 185, 129, 0.2);
+                color: #10b981;
+                border-radius: 20px;
+                font-size: 0.8rem;
+                margin-top: 1rem;
+                border: 1px solid #10b981;
             }}
             .container {{
                 display: flex;
@@ -98,6 +119,7 @@ def get_dashboard():
                 border-bottom: 2px solid var(--accent);
                 padding-bottom: 0.5rem;
                 margin-bottom: 1.5rem;
+                font-size: 1.5rem;
             }}
             .card {{
                 background: var(--card-bg);
@@ -122,20 +144,35 @@ def get_dashboard():
         </style>
     </head>
     <body>
+        <div class="refresh-bar" id="progressBar"></div>
         <header>
             <h1>Jua Kali Matcher</h1>
             <p class="subtitle">Live Agent Arbitration Dashboard</p>
+            <div class="status-badge">● Live Polling Active</div>
         </header>
         <div class="container">
             <div class="column">
                 <h2>Registered Youth (Apprentices)</h2>
-                {youth_cards if youth_cards else "<p>No youth registered yet. Dial the USSD code to register!</p>"}
+                {youth_cards if youth_cards else "<p>Waiting for registrations...</p>"}
             </div>
             <div class="column">
-                <h2>Master Requests (Processed by Agent)</h2>
-                {master_cards if master_cards else "<p>No masters have called yet.</p>"}
+                <h2>Master Requests (AI Processed)</h2>
+                {master_cards if master_cards else "<p>Waiting for agent to process calls...</p>"}
             </div>
         </div>
+        <script>
+            // Auto-refresh script
+            window.onload = function() {{
+                const bar = document.getElementById('progressBar');
+                // Start the bar animation
+                setTimeout(() => bar.style.width = '100%', 100);
+                
+                // Refresh after 10 seconds
+                setTimeout(() => {{
+                    window.location.reload();
+                }}, 10000);
+            }};
+        </script>
     </body>
     </html>
     """
