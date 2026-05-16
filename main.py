@@ -148,7 +148,7 @@ def get_dashboard():
         <header>
             <h1>Jua Kali Matcher</h1>
             <p class="subtitle">Live Agent Arbitration Dashboard</p>
-            <div class="status-badge">● Live Polling Active</div>
+            <div class="status-badge">● Live Polling Active (Next update in <span id="timer">10</span>s)</div>
         </header>
         <div class="container">
             <div class="column">
@@ -161,16 +161,24 @@ def get_dashboard():
             </div>
         </div>
         <script>
-            // Auto-refresh script
+            // Auto-refresh script with countdown
             window.onload = function() {{
                 const bar = document.getElementById('progressBar');
+                const timerText = document.getElementById('timer');
+                let timeLeft = 10;
+                
                 // Start the bar animation
                 setTimeout(() => bar.style.width = '100%', 100);
                 
-                // Refresh after 10 seconds
-                setTimeout(() => {{
-                    window.location.reload();
-                }}, 10000);
+                // Countdown timer
+                const countdown = setInterval(() => {{
+                    timeLeft--;
+                    timerText.innerText = timeLeft;
+                    if (timeLeft <= 0) {{
+                        clearInterval(countdown);
+                        window.location.reload();
+                    }}
+                }}, 1000);
             }};
         </script>
     </body>
