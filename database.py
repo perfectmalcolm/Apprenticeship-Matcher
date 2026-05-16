@@ -27,6 +27,10 @@ def init_db():
             location TEXT,
             audio_url TEXT,
             summary TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
     # Seed Data for Demo
     cursor.execute("INSERT OR IGNORE INTO youth (phone_number, trade_interest, location) VALUES ('+254700000001', 'Carpentry', 'Nairobi')")
     cursor.execute("INSERT OR IGNORE INTO youth (phone_number, trade_interest, location) VALUES ('+254700000002', 'Welding', 'Mombasa')")
@@ -58,10 +62,8 @@ def save_master(phone_number: str, trade: str, location: str, audio_url: str, su
     conn.close()
 
 def search_apprentices_in_db(trade: str, location: str):
-    """Searches for youth matching the trade and location."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    # Using simple LIKE for fuzzy matching in MVP
     cursor.execute(
         "SELECT phone_number FROM youth WHERE trade_interest LIKE ? AND location LIKE ?",
         (f"%{trade}%", f"%{location}%")
