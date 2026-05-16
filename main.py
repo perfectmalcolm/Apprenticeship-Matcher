@@ -15,26 +15,35 @@ def get_dashboard():
     youths = get_all_youth()
     masters = get_all_masters()
     
+    youth_count = len(youths)
+    master_count = len(masters)
+
     youth_cards = ""
-    for y in youths:
+    for i, y in enumerate(youths):
         youth_cards += f"""
-        <div class="card">
-            <h3>Trade: {y['trade_interest']}</h3>
-            <p><strong>Phone:</strong> {y['phone_number']}</p>
-            <p><strong>Location:</strong> {y['location']}</p>
-            <p class="time">Registered: {y['registered_at']}</p>
+        <div class="sms-bubble youth-bubble" style="animation-delay: {i * 0.1}s">
+            <div class="bubble-icon">&#128296;</div>
+            <div class="bubble-content">
+                <div class="bubble-trade">{y['trade_interest']}</div>
+                <div class="bubble-detail"><span class="label">&#128222;</span> {y['phone_number']}</div>
+                <div class="bubble-detail"><span class="label">&#128205;</span> {y['location']}</div>
+                <div class="bubble-time">{y['registered_at']}</div>
+            </div>
         </div>
         """
         
     master_cards = ""
-    for m in masters:
+    for i, m in enumerate(masters):
         master_cards += f"""
-        <div class="card master-card">
-            <h3>Trade: {m['trade']}</h3>
-            <p><strong>Phone:</strong> {m['phone_number']}</p>
-            <p><strong>Location:</strong> {m['location']}</p>
-            <p><strong>Agent Summary:</strong> {m['summary']}</p>
-            <p class="time">Processed: {m['created_at']}</p>
+        <div class="sms-bubble master-bubble" style="animation-delay: {i * 0.1}s">
+            <div class="bubble-icon">&#128119;</div>
+            <div class="bubble-content">
+                <div class="bubble-trade">{m['trade']}</div>
+                <div class="bubble-detail"><span class="label">&#128222;</span> {m['phone_number']}</div>
+                <div class="bubble-detail"><span class="label">&#128205;</span> {m['location']}</div>
+                <div class="bubble-agent">&#129302; {m['summary']}</div>
+                <div class="bubble-time">{m['created_at']}</div>
+            </div>
         </div>
         """
 
@@ -44,133 +53,466 @@ def get_dashboard():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Jua Kali Matcher - Live Dashboard</title>
-        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+        <title>Jua Kali Matcher — Live Dashboard</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link href="https://fonts.googleapis.com/css2?family=VT323&family=Space+Mono:wght@400;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
         <style>
+            /* ===== DESIGN TOKENS ===== */
             :root {{
-                --bg-color: #0f172a;
-                --card-bg: rgba(30, 41, 59, 0.7);
-                --accent: #3b82f6;
-                --text-main: #f8fafc;
-                --text-muted: #94a3b8;
-                --master-border: #10b981;
+                --nokia-green: #33ff33;
+                --nokia-dark: #003300;
+                --kenya-black: #111111;
+                --kenya-red: #bb2222;
+                --kenya-green: #006600;
+                --spark-orange: #ff6600;
+                --spark-yellow: #ffcc00;
+                --metal-dark: #1a1a1a;
+                --metal-mid: #2a2a2a;
+                --metal-light: #3a3a3a;
+                --text-dim: #667766;
+                --screen-glow: rgba(51, 255, 51, 0.08);
             }}
+
+            /* ===== RESET & BASE ===== */
+            *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+            
             body {{
-                margin: 0;
-                font-family: 'Outfit', sans-serif;
-                background-color: var(--bg-color);
-                color: var(--text-main);
-                background-image: radial-gradient(circle at top right, #1e1b4b, transparent 40%),
-                                  radial-gradient(circle at bottom left, #064e3b, transparent 40%);
+                font-family: 'Space Mono', monospace;
+                background: var(--kenya-black);
+                color: var(--nokia-green);
                 min-height: 100vh;
+                overflow-x: hidden;
             }}
-            header {{
-                text-align: center;
-                padding: 2rem 1rem;
-                background: rgba(15, 23, 42, 0.5);
-                backdrop-filter: blur(10px);
-                border-bottom: 1px solid rgba(255,255,255,0.1);
+
+            /* ===== CORRUGATED METAL BACKGROUND ===== */
+            body::before {{
+                content: '';
+                position: fixed;
+                inset: 0;
+                background:
+                    repeating-linear-gradient(
+                        90deg,
+                        rgba(255,255,255,0.02) 0px,
+                        rgba(255,255,255,0.02) 2px,
+                        transparent 2px,
+                        transparent 12px
+                    ),
+                    repeating-linear-gradient(
+                        0deg,
+                        rgba(255,255,255,0.01) 0px,
+                        transparent 1px,
+                        transparent 4px
+                    );
+                pointer-events: none;
+                z-index: 0;
             }}
+
+            /* ===== PROGRESS BAR (NOKIA GREEN) ===== */
             .refresh-bar {{
-                height: 4px;
-                background: var(--accent);
+                height: 3px;
+                background: linear-gradient(90deg, var(--nokia-green), var(--spark-yellow), var(--spark-orange));
                 width: 0%;
                 position: fixed;
-                top: 0;
-                left: 0;
-                transition: width 10s linear;
+                top: 0; left: 0;
+                transition: width 15s linear;
                 z-index: 1000;
+                box-shadow: 0 0 8px var(--nokia-green);
             }}
-            h1 {{
-                margin: 0;
-                font-size: 2.5rem;
-                background: linear-gradient(to right, #60a5fa, #34d399);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
+
+            /* ===== HEADER — FEATURE PHONE SCREEN ===== */
+            header {{
+                position: relative;
+                text-align: center;
+                padding: 2rem 1rem 1.5rem;
+                background: var(--metal-dark);
+                border-bottom: 3px solid var(--kenya-red);
+                box-shadow: 0 2px 20px rgba(0,0,0,0.5);
+                z-index: 1;
             }}
-            p.subtitle {{
-                color: var(--text-muted);
-                font-size: 1rem;
-                margin-top: 0.5rem;
+            header::after {{
+                content: '';
+                position: absolute;
+                bottom: -3px; left: 0; right: 0;
+                height: 3px;
+                background: var(--kenya-green);
             }}
-            .status-badge {{
+
+            .phone-screen {{
                 display: inline-block;
-                padding: 4px 12px;
-                background: rgba(16, 185, 129, 0.2);
-                color: #10b981;
-                border-radius: 20px;
-                font-size: 0.8rem;
-                margin-top: 1rem;
-                border: 1px solid #10b981;
+                background: var(--nokia-dark);
+                border: 2px solid #224422;
+                border-radius: 8px;
+                padding: 1rem 2rem;
+                box-shadow: inset 0 0 30px rgba(51,255,51,0.05), 0 0 15px rgba(51,255,51,0.1);
+                max-width: 500px;
+                width: 100%;
             }}
+
+            .phone-status-bar {{
+                display: flex;
+                justify-content: space-between;
+                font-family: 'VT323', monospace;
+                font-size: 0.85rem;
+                color: var(--text-dim);
+                margin-bottom: 0.5rem;
+                padding-bottom: 0.4rem;
+                border-bottom: 1px solid #224422;
+            }}
+
+            h1 {{
+                font-family: 'VT323', monospace;
+                font-size: 2.2rem;
+                color: var(--nokia-green);
+                text-shadow: 0 0 10px rgba(51,255,51,0.5);
+                letter-spacing: 2px;
+                margin: 0.25rem 0;
+            }}
+
+            .tagline {{
+                font-family: 'VT323', monospace;
+                color: var(--text-dim);
+                font-size: 1.1rem;
+                letter-spacing: 1px;
+            }}
+
+            /* ===== KENYA FLAG STRIPE ===== */
+            .flag-stripe {{
+                display: flex;
+                height: 6px;
+                z-index: 1;
+                position: relative;
+            }}
+            .flag-stripe span {{
+                flex: 1;
+            }}
+            .flag-stripe .fk {{ background: var(--kenya-black); }}
+            .flag-stripe .fr {{ background: var(--kenya-red); }}
+            .flag-stripe .fg {{ background: var(--kenya-green); }}
+
+            /* ===== STATS BAR ===== */
+            .stats-bar {{
+                display: flex;
+                justify-content: center;
+                gap: 2rem;
+                padding: 1rem;
+                background: var(--metal-dark);
+                border-bottom: 1px solid #333;
+                z-index: 1;
+                position: relative;
+            }}
+            .stat {{
+                text-align: center;
+            }}
+            .stat-number {{
+                font-family: 'VT323', monospace;
+                font-size: 2rem;
+                color: var(--nokia-green);
+                text-shadow: 0 0 8px rgba(51,255,51,0.4);
+            }}
+            .stat-label {{
+                font-size: 0.7rem;
+                color: #888;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+            }}
+            .stat-divider {{
+                width: 1px;
+                background: #333;
+                align-self: stretch;
+            }}
+
+            /* ===== LIVE BADGE ===== */
+            .live-badge {{
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 14px;
+                background: rgba(51,255,51,0.08);
+                border: 1px solid #224422;
+                border-radius: 4px;
+                font-family: 'VT323', monospace;
+                font-size: 1rem;
+                color: var(--nokia-green);
+                margin-top: 0.75rem;
+            }}
+            .live-dot {{
+                width: 8px; height: 8px;
+                background: var(--nokia-green);
+                border-radius: 50%;
+                animation: pulse 1.5s ease-in-out infinite;
+                box-shadow: 0 0 6px var(--nokia-green);
+            }}
+            @keyframes pulse {{
+                0%, 100% {{ opacity: 1; transform: scale(1); }}
+                50% {{ opacity: 0.4; transform: scale(0.8); }}
+            }}
+
+            /* ===== MAIN CONTAINER ===== */
             .container {{
                 display: flex;
                 flex-wrap: wrap;
-                gap: 2rem;
-                padding: 2rem;
-                max-width: 1400px;
+                gap: 1.5rem;
+                padding: 1.5rem;
+                max-width: 1300px;
                 margin: 0 auto;
+                position: relative;
+                z-index: 1;
             }}
+
             .column {{
                 flex: 1;
-                min-width: 300px;
+                min-width: 320px;
             }}
-            h2 {{
-                border-bottom: 2px solid var(--accent);
-                padding-bottom: 0.5rem;
-                margin-bottom: 1.5rem;
-                font-size: 1.5rem;
-            }}
-            .card {{
-                background: var(--card-bg);
-                border-radius: 12px;
-                padding: 1.5rem;
+
+            /* ===== SECTION HEADERS ===== */
+            .section-header {{
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
                 margin-bottom: 1rem;
-                border: 1px solid rgba(255,255,255,0.05);
-                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                transition: transform 0.2s, box-shadow 0.2s;
-                backdrop-filter: blur(5px);
+                padding-bottom: 0.5rem;
+                border-bottom: 1px dashed #333;
             }}
-            .card:hover {{
-                transform: translateY(-5px);
-                box-shadow: 0 10px 15px rgba(0,0,0,0.2);
+            .section-header h2 {{
+                font-family: 'VT323', monospace;
+                font-size: 1.4rem;
+                color: var(--nokia-green);
+                letter-spacing: 1px;
+                border: none;
+                margin: 0;
+                padding: 0;
             }}
-            .master-card {{
-                border-left: 4px solid var(--master-border);
+            .section-icon {{
+                font-size: 1.3rem;
             }}
-            .card h3 {{ margin-top: 0; color: #fff; }}
-            .card p {{ margin: 0.5rem 0; color: #cbd5e1; }}
-            .time {{ font-size: 0.8rem; color: var(--text-muted) !important; margin-top: 1rem !important; }}
+            .section-count {{
+                margin-left: auto;
+                font-family: 'VT323', monospace;
+                font-size: 1.1rem;
+                color: var(--text-dim);
+                background: #1a1a1a;
+                padding: 2px 10px;
+                border-radius: 3px;
+                border: 1px solid #333;
+            }}
+
+            /* ===== SMS BUBBLE CARDS ===== */
+            .sms-bubble {{
+                display: flex;
+                gap: 0.75rem;
+                background: var(--metal-mid);
+                border: 1px solid #333;
+                border-radius: 2px 12px 12px 12px;
+                padding: 1rem;
+                margin-bottom: 0.75rem;
+                transition: all 0.25s ease;
+                animation: slideIn 0.4s ease-out both;
+                position: relative;
+                overflow: hidden;
+            }}
+            .sms-bubble::before {{
+                content: '';
+                position: absolute;
+                top: 0; left: 0;
+                width: 3px; height: 100%;
+            }}
+            .youth-bubble::before {{
+                background: linear-gradient(to bottom, var(--kenya-green), transparent);
+            }}
+            .master-bubble::before {{
+                background: linear-gradient(to bottom, var(--spark-orange), var(--spark-yellow));
+            }}
+            .sms-bubble:hover {{
+                border-color: var(--nokia-green);
+                box-shadow: 0 0 12px rgba(51,255,51,0.08);
+                transform: translateX(4px);
+            }}
+            @keyframes slideIn {{
+                from {{ opacity: 0; transform: translateY(10px); }}
+                to {{ opacity: 1; transform: translateY(0); }}
+            }}
+
+            .bubble-icon {{
+                font-size: 1.5rem;
+                flex-shrink: 0;
+                width: 36px;
+                height: 36px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: rgba(51,255,51,0.06);
+                border-radius: 50%;
+                border: 1px solid #333;
+            }}
+            .bubble-content {{
+                flex: 1;
+                min-width: 0;
+            }}
+            .bubble-trade {{
+                font-family: 'Outfit', sans-serif;
+                font-weight: 700;
+                font-size: 1.05rem;
+                color: #fff;
+                margin-bottom: 0.3rem;
+            }}
+            .bubble-detail {{
+                font-size: 0.8rem;
+                color: #999;
+                margin: 0.15rem 0;
+            }}
+            .bubble-detail .label {{
+                font-size: 0.85rem;
+                margin-right: 4px;
+            }}
+            .bubble-agent {{
+                font-size: 0.8rem;
+                color: var(--nokia-green);
+                background: rgba(51,255,51,0.06);
+                padding: 6px 8px;
+                border-radius: 4px;
+                margin-top: 0.4rem;
+                border-left: 2px solid var(--nokia-green);
+            }}
+            .bubble-time {{
+                font-family: 'VT323', monospace;
+                font-size: 0.8rem;
+                color: #555;
+                margin-top: 0.4rem;
+                text-align: right;
+            }}
+
+            /* ===== EMPTY STATE ===== */
+            .empty-state {{
+                text-align: center;
+                padding: 2rem;
+                color: #555;
+                font-family: 'VT323', monospace;
+                font-size: 1.1rem;
+                border: 1px dashed #333;
+                border-radius: 8px;
+            }}
+            .empty-state .blink {{
+                animation: blink 1s step-end infinite;
+            }}
+            @keyframes blink {{
+                50% {{ opacity: 0; }}
+            }}
+
+            /* ===== SPARK PARTICLES ===== */
+            .spark {{
+                position: fixed;
+                width: 3px; height: 3px;
+                background: var(--spark-orange);
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 0;
+                animation: sparkFly 3s ease-out infinite;
+            }}
+            @keyframes sparkFly {{
+                0% {{ opacity: 1; transform: translateY(0) scale(1); }}
+                100% {{ opacity: 0; transform: translateY(-120px) translateX(var(--drift)) scale(0); }}
+            }}
+
+            /* ===== FOOTER ===== */
+            footer {{
+                text-align: center;
+                padding: 1.5rem;
+                color: #444;
+                font-family: 'VT323', monospace;
+                font-size: 0.9rem;
+                border-top: 1px solid #222;
+                position: relative;
+                z-index: 1;
+            }}
+            footer a {{
+                color: var(--nokia-green);
+                text-decoration: none;
+            }}
+
+            /* ===== RESPONSIVE ===== */
+            @media (max-width: 700px) {{
+                .container {{ padding: 1rem; }}
+                h1 {{ font-size: 1.6rem; }}
+                .phone-screen {{ padding: 0.75rem 1rem; }}
+                .stats-bar {{ gap: 1rem; }}
+            }}
         </style>
     </head>
     <body>
         <div class="refresh-bar" id="progressBar"></div>
+
         <header>
-            <h1>Jua Kali Matcher</h1>
-            <p class="subtitle">Live Agent Arbitration Dashboard</p>
-            <div class="status-badge">● Live Polling Active (Next update in <span id="timer">10</span>s)</div>
-        </header>
-        <div class="container">
-            <div class="column">
-                <h2>Registered Youth (Apprentices)</h2>
-                {youth_cards if youth_cards else "<p>Waiting for registrations...</p>"}
+            <div class="phone-screen">
+                <div class="phone-status-bar">
+                    <span>Safaricom KE</span>
+                    <span>&#9608;&#9608;&#9608;&#9608;&#9601;</span>
+                </div>
+                <h1>JUA KALI MATCHER</h1>
+                <div class="tagline">Connecting Masters &amp; Apprentices</div>
+                <div class="live-badge">
+                    <span class="live-dot"></span>
+                    LIVE &mdash; Next sync in <span id="timer">15</span>s
+                </div>
             </div>
-            <div class="column">
-                <h2>Master Requests (AI Processed)</h2>
-                {master_cards if master_cards else "<p>Waiting for agent to process calls...</p>"}
+        </header>
+
+        <div class="flag-stripe">
+            <span class="fk"></span>
+            <span class="fr"></span>
+            <span class="fg"></span>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat">
+                <div class="stat-number">{youth_count}</div>
+                <div class="stat-label">Apprentices</div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat">
+                <div class="stat-number">{master_count}</div>
+                <div class="stat-label">Masters</div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat">
+                <div class="stat-number">{min(youth_count, master_count)}</div>
+                <div class="stat-label">Matches</div>
             </div>
         </div>
+
+        <div class="container">
+            <div class="column">
+                <div class="section-header">
+                    <span class="section-icon">&#128296;</span>
+                    <h2>APPRENTICES</h2>
+                    <span class="section-count">{youth_count}</span>
+                </div>
+                {youth_cards if youth_cards else '<div class="empty-state">Dial *384*54593# to register<span class="blink">_</span></div>'}
+            </div>
+            <div class="column">
+                <div class="section-header">
+                    <span class="section-icon">&#128119;</span>
+                    <h2>MASTER REQUESTS</h2>
+                    <span class="section-count">{master_count}</span>
+                </div>
+                {master_cards if master_cards else '<div class="empty-state">SMS MASTER: to 24881<span class="blink">_</span></div>'}
+            </div>
+        </div>
+
+        <footer>
+            Powered by Gemini AI &bull; Africa&#39;s Talking &bull; Google Cloud Run<br>
+            <a href="https://github.com/perfectmalcolm/Apprenticeship-Matcher">GitHub</a> &bull; GDG Nairobi Agentathon 2026
+        </footer>
+
+        <!-- Spark Particles (welding effect) -->
+        <div id="sparks"></div>
+
         <script>
-            // Auto-refresh script with countdown
-            window.onload = function() {{
+            // Auto-refresh with countdown
+            (function() {{
                 const bar = document.getElementById('progressBar');
                 const timerText = document.getElementById('timer');
-                let timeLeft = 10;
-                
-                // Start the bar animation
+                let timeLeft = 15;
                 setTimeout(() => bar.style.width = '100%', 100);
-                
-                // Countdown timer
                 const countdown = setInterval(() => {{
                     timeLeft--;
                     timerText.innerText = timeLeft;
@@ -179,7 +521,24 @@ def get_dashboard():
                         window.location.reload();
                     }}
                 }}, 1000);
-            }};
+            }})();
+
+            // Welding Spark Particles
+            (function() {{
+                const container = document.getElementById('sparks');
+                function createSpark() {{
+                    const spark = document.createElement('div');
+                    spark.className = 'spark';
+                    spark.style.left = (Math.random() * 100) + 'vw';
+                    spark.style.top = (60 + Math.random() * 40) + 'vh';
+                    spark.style.setProperty('--drift', (Math.random() * 60 - 30) + 'px');
+                    spark.style.animationDuration = (2 + Math.random() * 2) + 's';
+                    spark.style.background = Math.random() > 0.5 ? '#ff6600' : '#ffcc00';
+                    container.appendChild(spark);
+                    setTimeout(() => spark.remove(), 4000);
+                }}
+                setInterval(createSpark, 400);
+            }})();
         </script>
     </body>
     </html>
