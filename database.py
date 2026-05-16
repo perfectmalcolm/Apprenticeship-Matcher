@@ -27,9 +27,10 @@ def init_db():
             location TEXT,
             audio_url TEXT,
             summary TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
+    # Seed Data for Demo
+    cursor.execute("INSERT OR IGNORE INTO youth (phone_number, trade_interest, location) VALUES ('+254700000001', 'Carpentry', 'Nairobi')")
+    cursor.execute("INSERT OR IGNORE INTO youth (phone_number, trade_interest, location) VALUES ('+254700000002', 'Welding', 'Mombasa')")
+    cursor.execute("INSERT OR IGNORE INTO youth (phone_number, trade_interest, location) VALUES ('+254700000003', 'Plumbing', 'Nairobi')")
     
     conn.commit()
     conn.close()
