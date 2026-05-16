@@ -246,7 +246,7 @@ async def voice_recording_webhook(
     Callback webhook for voice recordings.
     """
     print(f"Received recording for {callerNumber}: {recordingUrl}")
-    background_tasks.add_task(process_master_request, callerNumber, audio_url=recordingUrl)
+    await process_master_request(callerNumber, audio_url=recordingUrl)
     return {"status": "Processing"}
 
 @app.post("/sms")
@@ -263,6 +263,6 @@ async def sms_webhook(
     print(f"Received SMS from {from_}: {text}")
     clean_text = text.strip()
     if clean_text.upper().startswith("MASTER"):
-        background_tasks.add_task(process_master_request, from_, text=clean_text)
+        await process_master_request(from_, text=clean_text)
         return {"status": "Processing Master Request"}
     return {"status": "Ignored"}
